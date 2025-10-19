@@ -36,8 +36,8 @@ def scraper():
     count = 0
     with open(DATA_FP, "w", newline="", encoding="utf-8") as data_file:
         writer = csv.writer(data_file)
-        writer.writerow(["Faculty", "Code", "Title", "Description"])
-
+        writer.writerow(["Faculty", "Code", "Title", "Description", 
+                         "Lecture", "Laboratory", "Tutorial", "Prerequisites"])
         for url in target_paths:
             print(f"Starting scrape on -> {url}")
             try:
@@ -68,8 +68,32 @@ def scraper():
                     continue
 
                 course_description = desc_tag.get_text(strip=True)
+                
+                comp_tags = block.find_all("p", class_="courseblockextra noindent")
+                lecture, lab, tutorial = "", "", ""  # initialize empty strings
+                if comp_tags:
+                    components = comp_tags[0].get_text(strip=True)
+                    components = components.removeprefix("Course Component:").strip()
+    
+                    # Split by comma and assign to correct variable
+                    for comp in components.split(','):
+                        comp = comp.strip().lower()
+                        if 'lecture' in comp:
+                            lecture = comp
+                        elif 'laboratory' in comp or 'lab' in comp:
+                            lab = comp
+                        elif 'tutorial' in comp:
+                            tutorial = comp
 
-                writer.writerow([course_faculty, course_code, course_title, course_description])
+                
+                prereq_tags = block.find_all("p", class_="courseblockextra highlight noindent")
+                if prereq_tags: 
+                    prerequisites = prereq_tags[0].get_text(strip=True)
+                    prerequisites = prerequisites.removeprefix("Prerequisite:").removeprefix("Prerequisites:").strip()
+                
+                writer.writerow([course_faculty, course_code, course_title, 
+                                 course_description, lecture, lab, tutorial, prerequisites])
+                
                 count += 1
         print(f"Successfully scraped a total of {count} courses.")
 
