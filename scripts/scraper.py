@@ -18,17 +18,6 @@ target_paths = ['https://catalogue.uottawa.ca/en/courses/elg/', #electrical
                 ]
 
 
-#helper
-def is_french(course_code: str) -> bool:
-    """
-    if french -> True
-    if not french -> False
-
-    Checking via 2nd course digit (5, 7, 9 -> French)
-    """
-    french_codes = ['5', '7', '9']
-    return(course_code[1] in french_codes)
-
 def scraper():
     """
     Main scraper unit
@@ -37,7 +26,7 @@ def scraper():
     with open(DATA_FP, "w", newline="", encoding="utf-8") as data_file:
         writer = csv.writer(data_file)
         writer.writerow(["Faculty", "Code", "Title", "Description", 
-                         "Lecture", "Laboratory", "Tutorial", "Prerequisites"])
+                         "Components", "Prerequisites"])
         for url in target_paths:
             print(f"Starting scrape on -> {url}")
             try:
@@ -58,9 +47,6 @@ def scraper():
                 gen_info = title_text.split(" ", 1)
                 course_faculty, course_code = gen_info[0][0:3], gen_info[0][-4:]
 
-                if is_french(course_code=course_code):
-                    continue
-
                 course_title = gen_info[-1].split('(3')[0]
                 desc_tag = block.find("p", class_="courseblockdesc noindent")
 
@@ -70,29 +56,20 @@ def scraper():
                 course_description = desc_tag.get_text(strip=True)
                 
                 comp_tags = block.find_all("p", class_="courseblockextra noindent")
-                lecture, lab, tutorial = "", "", ""  # initialize empty strings
+                components = "" 
                 if comp_tags:
                     components = comp_tags[0].get_text(strip=True)
                     components = components.removeprefix("Course Component:").strip()
+                    components = " ".join(components.split())
     
-                    # Split by comma and assign to correct variable
-                    for comp in components.split(','):
-                        comp = comp.strip().lower()
-                        if 'lecture' in comp:
-                            lecture = comp
-                        elif 'laboratory' in comp or 'lab' in comp:
-                            lab = comp
-                        elif 'tutorial' in comp:
-                            tutorial = comp
-
-                
+                    
                 prereq_tags = block.find_all("p", class_="courseblockextra highlight noindent")
+                prerequisites = ""
                 if prereq_tags: 
                     prerequisites = prereq_tags[0].get_text(strip=True)
-                    prerequisites = prerequisites.removeprefix("Prerequisite:").removeprefix("Prerequisites:").strip()
                 
                 writer.writerow([course_faculty, course_code, course_title, 
-                                 course_description, lecture, lab, tutorial, prerequisites])
+                                 course_description, components, prerequisites])
                 
                 count += 1
         print(f"Successfully scraped a total of {count} courses.")
