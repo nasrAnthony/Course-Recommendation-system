@@ -2,57 +2,75 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 
-def recommend_courses(
-    query_emb,
-    course_embs,
-    course_df,
-    top_n
-):
-    """
-    query_emb: (dim,) or (1, dim)
-    course_embs: (num_courses, dim)
-    course_df: DataFrame with course info
-    """
-    # Ensure numpy arrays
-    query_emb = np.asarray(query_emb)
-    course_embs = np.asarray(course_embs)
+def get_top_n_recommendations(student_emb, course_embs, course_df, top_n=5):
+    
+    # 2D shape for cosine similarity
+    student_emb = np.asarray(student_emb)
+    if student_emb.ndim == 1:
+        student_emb = student_emb[None, :]
 
-    # Make query 2D for cosine_similarity
-    if query_emb.ndim == 1:
-        query_emb = query_emb[None, :]  # (1, dim)
+    # cosine similarity calculation for all courses
+    sims = cosine_similarity(student_emb, course_embs)[0]
 
-    # Cosine similarity between query and all courses
-    sims = cosine_similarity(query_emb, course_embs)[0]  # (num_courses,)
-
-    # Get top-k indices (sorted high → low)
+    # get top N course indicies
     top_idx = np.argsort(-sims)[:top_n]
 
-    # Slice your DataFrame and attach scores
-    results = course_df.iloc[top_idx].copy()
-    results["similarity"] = sims[top_idx]
+    # make a df with the chosen courses data
+    top_df = course_df.iloc[top_idx].copy()
+    top_df["similarity"] = sims[top_idx]
 
-    # Optional: reset index for neatness
-    results = results.reset_index(drop=True)
-
-    return results
+    return top_df
 
 
-# Fake course embeddings: 10 courses, 768-dim
-num_courses = 50
-dim = 768
+def print_recommendations(recs_df):
+    ''' Takes pd dataframe and prints the top N courses'''
 
-rng = np.random.default_rng(0)
-fake_course_embs = rng.normal(size=(num_courses, dim))
+    print(f"\nTop {len(recs_df)} recommended courses:\n")
 
-# Fake query embedding
-fake_query_emb = rng.normal(size=(dim,))
+    for i, row in recs_df.iterrows():
+        fac_code = f"{row['Faculty']} {row['Code']}"
+        title = row['Title']
+        desc = row['Description']
+        sim_str = f" [similarity: {row['similarity']:.4f}]"
 
-# Fake course metadata
-fake_course_df = pd.DataFrame({
-    "course_code": [f"COURSE{i:03d}" for i in range(num_courses)],
-    "course_title": [f"Dummy Course {i}" for i in range(num_courses)]
-})
+        print(f"{i+1}. {fac_code}{sim_str}")
+        print(f"   Title: {title}")
+        print(f"   Desc : {desc}\n")
+    
+def metrics(top_df, liked_courses_str):
 
-# Run recommender
-top_fake = recommend_courses(fake_query_emb, fake_course_embs, fake_course_df, top_n=5)
-print(top_fake[["course_code", "course_title", "similarity"]])
+    liked_list = [x.strip() for x in liked_courses_str.split(";") if x.strip()]
+    liked_set = set(liked_list)
+
+    matches = []
+    first_match_rank = None
+
+    for rank, (_, row) in enumerate(top_df.iterrows(), start=1):
+        fac_code = f"{row['Faculty']} {row['Code']}"
+        
+        if fac_code in liked_set:
+            matches.append(fac_code)
+            
+            if first_match_rank is None:
+                first_match_rank = rank
+
+    top_n = len(top_df)
+    num_matches = len(matches)
+    num_liked = len(liked_list)
+    
+    # metrics calculations
+    hit = 1 if num_matches > 0 else 0
+    precision = num_matches / top_n if top_n > 0 else 0
+    recall = num_matches / num_liked if num_liked > 0 else 0
+    mrr = 1 / first_match_rank if first_match_rank is not None else 0
+
+    return {
+        "matches": matches,
+        "hit": hit,
+        "precision": precision,
+        "recall": recall,
+        "mrr": mrr,
+    }
+
+
+
