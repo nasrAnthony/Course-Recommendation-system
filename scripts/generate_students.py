@@ -5,7 +5,7 @@ import random
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COURSES_FP = os.path.join(BASE_DIR, "data", "cleaned_courses.csv")
 STUDENTS_FP = os.path.join(BASE_DIR, "data", "students_raw.csv")
-N_STUDENTS = 200    # num of student data
+N_STUDENTS = 600    # num of student data
 
 def load_courses():
     """ Load courses from cleaned_courses.csv """

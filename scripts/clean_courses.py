@@ -18,6 +18,7 @@ USELESS_TITLE_WORDS = {
     "special topics",
     "topics in",
     "directed studies"
+    "thesis"
 }
 
 MIN_DESC_WORDS = 12
