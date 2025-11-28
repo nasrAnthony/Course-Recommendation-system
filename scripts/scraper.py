@@ -75,6 +75,8 @@ def scraper():
                                  course_description, components, prerequisites])
                 
                 count += 1
+        
+        # printing course count        
         print(f"Successfully scraped a total of {count} courses.")
 
 if __name__ == "__main__":
