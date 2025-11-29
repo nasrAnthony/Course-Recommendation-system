@@ -26,7 +26,7 @@ BATCH_SIZE = 16
 EPOCHS = 5
 LR = 2e-5
 PROJ_DIM = 256
-TEMPERATURE = 0.075
+TEMPERATURE = 0.075 # weight for similarity in contrastive loss
 LAMBDA_ISO = 0.05  # weight for isotropy regularizer
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
