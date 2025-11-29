@@ -44,12 +44,8 @@ def set_seed(seed=42):
 
 set_seed(SEED)
 
-# =========================
-# Training Loop
-# =========================
-
 def train():
-    # ---- Load data ----
+    # Load data --------------------------------------------------------------
     df = pd.read_csv(CSV_PATH)
     if TEXT_COLUMN not in df.columns:
         raise ValueError(f"Column {TEXT_COLUMN} not found in CSV.")
@@ -58,7 +54,7 @@ def train():
 
     print(f"Loaded {len(texts)} course descriptions.")
 
-    # ---- NEW: build faculty labels ----
+    # Build faculty labels ----------------------------------------------------
     if "Faculty" not in df.columns:
         raise ValueError("Expected a 'Faculty' column in the CSV for labels.")
 
@@ -70,12 +66,16 @@ def train():
 
     print(f"Found {len(unique_faculties)} unique faculties.")
 
+    # Tokenizing course data --------------------------------------------------
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-
     dataset = ContrastiveCourseDataset(texts, labels, tokenizer, full_codes, MAX_LEN)
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
 
-    # ---- Model, optimizer, scheduler, loss ----
+    # Initialization -----------------------------------------------------------
+    # Model: BERT
+    # Optimizer: Adam 
+    # Scheduler: for learning rate
+    # Loss: contrastive loss
     model = CourseEncoder().to(DEVICE)
     optimizer = AdamW(model.parameters(), lr=LR)
     total_steps = len(dataloader) * EPOCHS
@@ -84,12 +84,12 @@ def train():
         num_warmup_steps=int(0.1 * total_steps),
         num_training_steps=total_steps
     )
-
     criterion = SupervisedNTXentLoss(temperature=TEMPERATURE)
 
     model.train()
     step = 0
 
+    # Training Loop ------------------------------------------------------------
     for epoch in range(EPOCHS):
         running_loss = 0.0
         running_ctr = 0.0      # for logging
@@ -97,27 +97,29 @@ def train():
 
         for batch in dataloader:
             step += 1
+            # loading a batch of tokenized data
             input_ids_a      = batch["input_ids_a"].to(DEVICE)
             attention_mask_a = batch["attention_mask_a"].to(DEVICE)
             input_ids_b      = batch["input_ids_b"].to(DEVICE)
             attention_mask_b = batch["attention_mask_b"].to(DEVICE)
-            labels_batch     = batch["label"].to(DEVICE)   # <<< NEW
+            labels_batch     = batch["label"].to(DEVICE)
 
-            optimizer.zero_grad()
+            optimizer.zero_grad() # resetting gradients
 
             z_i = model(input_ids_a, attention_mask_a)  # (N, D) normalized
             z_j = model(input_ids_b, attention_mask_b)  # (N, D) normalized
 
-            # 1) supervised contrastive loss (multi-positive by faculty)
+            # supervised contrastive loss (faculty labels also considered positive)
             loss_contrastive = criterion(z_i, z_j, labels_batch)
 
-            # 2) isotropy regularizer on all embeddings in the batch
+            # isotropy regularizer on all embeddings in the batch
             z_all = torch.cat([z_i, z_j], dim=0)        # (2N, D)
             loss_iso = isotropy_regularizer(z_all)
 
-            # 3) total loss
+            # total loss
             loss = loss_contrastive + LAMBDA_ISO * loss_iso
 
+            # backward propagation and updating weights
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
@@ -127,6 +129,7 @@ def train():
             running_ctr  += loss_contrastive.item()
             running_iso  += loss_iso.item()
 
+            # batch average data and printing
             if step % 10 == 0:
                 avg_loss = running_loss / 10
                 avg_ctr  = running_ctr  / 10
@@ -140,7 +143,7 @@ def train():
                 running_ctr  = 0.0
                 running_iso  = 0.0
 
-    # ---- Save model ----
+    # Save model --------------------------------------------------------------
     save_dir = "model_v6_temp_0.75"
     os.makedirs(save_dir, exist_ok=True)
 
@@ -148,7 +151,7 @@ def train():
     torch.save(model.state_dict(), os.path.join(save_dir, "pytorch_model.bin"))
     tokenizer.save_pretrained(save_dir)
 
-    # Also save some config for reloading later
+    # Also save config for reloading later
     with open(os.path.join(save_dir, "config.txt"), "w") as f:
         f.write(f"MODEL_NAME={MODEL_NAME}\n")
         f.write(f"PROJ_DIM={PROJ_DIM}\n")
@@ -157,6 +160,6 @@ def train():
     print(f"Model saved to {save_dir}")
 
 
-train()
-
+if __name__ == "__main__":
+    train()
 
