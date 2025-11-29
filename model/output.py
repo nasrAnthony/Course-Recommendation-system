@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import cosine_similarity
 
 def get_top_n_recommendations(student_emb, course_embs, course_df, top_n=5):
@@ -37,7 +38,9 @@ def print_recommendations(recs_df):
         print(f"   Title: {title}")
         print(f"   Desc : {desc}\n")
     
+    
 def metrics(top_df, liked_courses_str):
+    # @Yhilal02 look at this again and clean it up
 
     liked_list = [x.strip() for x in liked_courses_str.split(";") if x.strip()]
     liked_set = set(liked_list)
@@ -71,3 +74,28 @@ def metrics(top_df, liked_courses_str):
         "recall": recall,
         "mrr": mrr,
     }
+    
+    
+def cosine_stats_and_plot(emb, label):
+    '''
+    Calculates cosine similarity for a set of embedded vectors.
+    input -> embeddings
+    output -> prints mean and std deviation//displays a histogram with the distribution
+    '''
+    n = min(600, emb.shape[0])
+    sub = emb[:n]
+
+    sims = cosine_similarity(sub, sub)
+    iu = np.triu_indices_from(sims, k=1)
+    vals = sims[iu]
+
+    print(f"\n{label}")
+    print("Mean cosine:", vals.mean())
+    print("Std  cosine:", vals.std())
+
+    plt.hist(vals, bins=50, alpha=0.8)
+    plt.title(f"Cosine similarity distribution – {label}")
+    plt.xlabel("Cosine similarity")
+    plt.ylabel("Count")
+    plt.grid(True)
+    plt.show()

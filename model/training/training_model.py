@@ -26,7 +26,7 @@ BATCH_SIZE = 16
 EPOCHS = 5
 LR = 2e-5
 PROJ_DIM = 256
-TEMPERATURE = 0.075 # weight for similarity in contrastive loss
+TEMPERATURE = 0.2 # weight for similarity in contrastive loss
 LAMBDA_ISO = 0.05  # weight for isotropy regularizer
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -144,7 +144,7 @@ def train():
                 running_iso  = 0.0
 
     # Save model --------------------------------------------------------------
-    save_dir = "model_v6_temp_0.75"
+    save_dir = "model/model_v7_0.2"
     os.makedirs(save_dir, exist_ok=True)
 
     # Save both BERT + projection head
