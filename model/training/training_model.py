@@ -17,7 +17,8 @@ from loss import SupervisedNTXentLoss, isotropy_regularizer
 
 
 # Paths and Parameters -----------------------------------------------
-CSV_PATH = "data/cleaned_courses.csv"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+CSV_PATH = os.path.join(BASE_DIR, "data", "cleaned_courses.csv")
 TEXT_COLUMN = "TextForBERT"
 
 MODEL_NAME = "bert-base-uncased"
@@ -144,7 +145,7 @@ def train():
                 running_iso  = 0.0
 
     # Save model --------------------------------------------------------------
-    save_dir = "model/model_v7_0.2"
+    save_dir = os.path.join(BASE_DIR, "model", "model_v7_0.2")
     os.makedirs(save_dir, exist_ok=True)
 
     # Save both BERT + projection head
