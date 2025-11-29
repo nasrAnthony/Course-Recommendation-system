@@ -86,8 +86,8 @@ def generate_students(courses, n_students):
 
         # only get the code(s) for used in student text
         liked_codes = []
-        for i in used_indices:
-            c = chosen[i]
+        for idx in used_indices:
+            c = chosen[idx]
             code_str = f"{c.get('Faculty','').strip()} {c.get('Code','').strip()}"
             liked_codes.append(code_str)
         
