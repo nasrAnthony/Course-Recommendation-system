@@ -4,8 +4,22 @@ import random
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COURSES_FP = os.path.join(BASE_DIR, "data", "cleaned_courses.csv")
-STUDENTS_FP = os.path.join(BASE_DIR, "data", "students_raw.csv")
-N_STUDENTS = 200    # num of student data
+STUDENTS_FP = os.path.join(BASE_DIR, "data", "students_clean.csv")
+N_STUDENTS = 600    # num of student data
+
+
+def clean_student_text(text: str) -> str:
+    """ Clean a single student text input """
+    
+    if not text:
+        return ""
+    
+    # the usual formatting
+    cleaned = text.strip()
+    cleaned = " ".join(cleaned.split())
+    cleaned = cleaned.lower()
+    
+    return cleaned
 
 def load_courses():
     """ Load courses from cleaned_courses.csv """
@@ -72,13 +86,16 @@ def generate_students(courses, n_students):
 
         # only get the code(s) for used in student text
         liked_codes = []
-        for i in used_indices:
-            c = chosen[i]
+        for idx in used_indices:
+            c = chosen[idx]
             code_str = f"{c.get('Faculty','').strip()} {c.get('Code','').strip()}"
             liked_codes.append(code_str)
         
+        # Clean the student text before adding to rows
+        cleaned_text = clean_student_text(student_text)
+        
         row = {
-            "StudentText": student_text,
+            "StudentText": cleaned_text,
             "LikedCourses": ";".join(liked_codes),
         }
 
@@ -99,7 +116,7 @@ def main():
         writer.writeheader()
         writer.writerows(students)
         
-    print(f"Wrote {len(students)} sample student sentences")
+    print(f"Generated and cleaned {len(students)} sample student entries")
     
 if __name__ == "__main__":
     main()
