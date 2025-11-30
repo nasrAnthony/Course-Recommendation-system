@@ -1,4 +1,5 @@
 import random
+import os
 from typing import List, Tuple
 import pandas as pd
 from nltk.corpus import wordnet as wn
@@ -9,7 +10,9 @@ import nltk
 for pkg in ['punkt', 'punkt_tab', 'averaged_perceptron_tagger', 'wordnet', 'omw-1.4']:
     nltk.download(pkg, quiet=True)
 
-CSV_PATH_AUGMENTED_DATA = "data/students_clean.csv"
+# Get path relative to project root
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+CSV_PATH_AUGMENTED_DATA = os.path.join(BASE_DIR, "data", "students_clean_train.csv")
 df_2 = pd.read_csv(CSV_PATH_AUGMENTED_DATA)
 
 # Text Augmentation -----------------------------------------------

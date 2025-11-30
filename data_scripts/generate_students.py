@@ -4,8 +4,10 @@ import random
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COURSES_FP = os.path.join(BASE_DIR, "data", "cleaned_courses.csv")
-STUDENTS_FP = os.path.join(BASE_DIR, "data", "students_clean.csv")
+STUDENTS_TRAIN_FP = os.path.join(BASE_DIR, "data", "students_clean_train.csv")
+STUDENTS_TEST_FP = os.path.join(BASE_DIR, "data", "students_clean_test.csv")
 N_STUDENTS = 600    # num of student data
+TRAIN_SPLIT = 0.8   # 80% for training, 20% for testing
 
 
 def clean_student_text(text: str) -> str:
@@ -110,13 +112,31 @@ def main():
         return
     students = generate_students(courses, N_STUDENTS)
 
-    with open(STUDENTS_FP, "w", newline="", encoding="utf-8") as f:
+    # Shuffle students before splitting to ensure random distribution
+    random.shuffle(students)
+    
+    # Split into train and test sets
+    split_idx = int(len(students) * TRAIN_SPLIT)
+    train_students = students[:split_idx]
+    test_students = students[split_idx:]
+    
+    # Write training set
+    with open(STUDENTS_TRAIN_FP, "w", newline="", encoding="utf-8") as f:
         fieldnames = ["StudentText", "LikedCourses"]
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(students)
+        writer.writerows(train_students)
+    
+    # Write test set
+    with open(STUDENTS_TEST_FP, "w", newline="", encoding="utf-8") as f:
+        fieldnames = ["StudentText", "LikedCourses"]
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(test_students)
         
     print(f"Generated and cleaned {len(students)} sample student entries")
+    print(f"  - Training set: {len(train_students)} entries -> {STUDENTS_TRAIN_FP}")
+    print(f"  - Test set: {len(test_students)} entries -> {STUDENTS_TEST_FP}")
     
 if __name__ == "__main__":
     main()
